@@ -32,17 +32,86 @@ This parameter is a list of structures. Each element will have two mandatory val
 
 ### GenerateLanguagesFiles
 
-This parameter is a boolean value, if it is set to true all the .json files of the languages will always be generated. It must be changed to false before deploying the project.
+This parameter is a combo options. According to the option chosen, the language files will be generated or not.
+* **IfNotExist**: Generate the language files only if they do not exist.
+* **Ever**: Always generates the language files. Is the default value.
+* **Never**: Does not generate language files.
 
-All languages .json files will be generated in data/languages folder.
+Keep in mind to change the value to IfNotExist or Never before doing any editing to the language .json files or before deploying the project.
 
-Keep in mind to change the value to false before doing any editing to the language .json files.
+### JoinShowTextValues
+
+This parameter is a boolean value, if set to true, all command objects with code 401 (show text) will be traits as one and their first parameter will me joined with \n as separator. You can view an example here
 
 ### ImagesSwitchLanguage
 
 This parameter is a boolean value, if set to true a request will be made asynchronously to check if a file with _{language}.png at the end of the name exists in the pictures folder before displaying an image from that folder.
 This may cause some lag when displaying images, especially on low-end android devices.
 
+
+## Language files
+
+The language files is a json file with the language as name. And have a structure with small keys so that their weight is smaller, since in large projects there can be a great impact if the keys are of large size as parameters.
+
+### Joined show text
+
+In the commonEvents or map### object inside the language file, there may be objects with a key **lt**, this is produced because command objects with code 401 have been joined (first parameter of each). and **lt** indicates how many objects have been joined. The main reason I added this is to try to reduce the size of the generated file.
+
+For example, with this:
+```json5
+/*....*/
+{
+  "code": 401,
+  "indent": 1,
+  "parameters": [
+    "\\n<\\N[1]>[I've got the perfect idea!\\! I just need to liven things up"
+  ]
+},
+{
+  "code": 401,
+  "indent": 1,
+  "parameters": [
+    "to boost the team's morale.!]"
+  ]
+}
+/*....*/
+```
+If JoinShowTextValues is true, this is produced:
+```json5
+/*....*/
+{
+ "e": 0,
+ "i": 8,
+ "pg": 15,
+ "ps": [
+     "\\n<\\N[1]>[I've got the perfect idea!\\! I just need to liven things up \nto boost the team's morale.!]"
+   ],
+ "lt": 2
+}
+/*....*/
+```
+
+If JoinShowTextValues is false, this is produced:
+```json
+/*....*/
+{
+  "e": 0,
+  "i": 8,
+  "pg": 15,
+  "ps": [
+    "\\n<\\N[1]>[I've got the perfect idea!\\! I just need to spice things up in order "
+  ]
+},
+{
+  "e": 0,
+  "i": 9,
+  "pg": 15,
+  "ps": [
+    "for her to see the fun in this too!]"
+  ]
+}
+/*....*/
+```
 
 ## About
 

@@ -30,7 +30,7 @@
  * @option Ever
  * @option Never
  * @desc Select an option for the generation of .json language files. It's only generated in PC version.
- * @default IfNotExist
+ * @default Ever
  *
  * @param JoinShowTextValues
  * @type boolean
