@@ -635,12 +635,12 @@ function mvMain() {
   var _make_data = ConfigManager.makeData;
   ConfigManager.makeData = function() {
     var config = _make_data.call(this);
-    config.MvLanguage = this.MvLanguage;
+    config[_langKey.language] = this[_langKey.language];
     return config;
   };
   var _apply_data = ConfigManager.applyData;
   ConfigManager.applyData = function(config) {
-    this.MvLanguageMap = this.readLanguage(config, _langKey.language);
+    this[_langKey.language] = this.readLanguage(config, _langKey.language);
     _apply_data.call(this, config);
   };
 
