@@ -53,7 +53,93 @@
  *                                  __/ |             __/ |
  *                                 |___/             |___/
  * =============================================================================
-
+ * Plugin parameters
+ * "Languages"
+ * This parameter is a list of structures.
+ * Each element will have two required values and one optional value.
+ * * language: A text to be used as the language identifier and also as the name
+ * of the .json file to be generated.
+ *
+ * * label: A text to be used as the value to display in the options menu when
+ * the selected language is changed, I recommend to put the name of the
+ * language (English, Español, etc).
+ *
+ * * labelLanguage: A text to be used as the value to display in the options
+ * menu as the value for the language option. I recommend using the language
+ * translation to the language to be added (Language, Idioma, etc).
+ *
+ *
+ * "GenerateLanguagesFiles"
+ * This parameter is a combo options. According to the option chosen,
+ * the language files will be generated or not.
+ * * IfNotExist: Generate the language files only if they do not exist.
+ * * Ever: Always generates the language files
+ * * Never: Does not generate language files
+ * Keep in mind to change the value to IfNotExist or Never before doing
+ * any editing to the language .json files or before deploying the project.
+ *
+ *
+ * "ImagesSwitchLanguage"
+ * This parameter is a boolean value, if set to true a request will be made
+ * asynchronously to check if a file with _{language}.png at the end of the name
+ * exists in the pictures folder before displaying an image from that folder.
+ * This may cause some lag when displaying images,
+ * especially on low-end android devices.
+ *
+ *
+ * Language files
+ * The .json files that are generated have a structure with small keys so that
+ * their weight is smaller, since in large projects there can be a great impact
+ * if the keys are of large size as parameters.
+ *
+ * In addition, objects with the key "lt", is an object created from other objects
+ * with code 401 (show text), as shown below:
+ * {
+ *   "code": 401,
+ *   "indent": 1,
+ *   "parameters": [
+ *     "\\n<\\N[1]>[I've got the perfect idea!\\! I just need to liven things up"
+ *   ]
+ * },
+ * {
+ *   "code": 401,
+ *   "indent": 1,
+ *   "parameters": [
+ *     "to boost the team's morale.!]"
+ *   ]
+ * }
+ *
+ * Produce:
+ * {
+ *   "e": 0,
+ *   "i": 8,
+ *   "pg": 15,
+ *   "ps": [
+ *     "\\n<\\N[1]>[I've got the perfect idea!\\! I just need to liven things up
+ *     \nto boost the team's morale.!]"
+ *   ],
+ *   "lt": 2
+ * }
+ *
+ * In these, the value of "lt" indicates how many objects parameter have been
+ * joined to form the first ps item. Each value of the first parameter of the
+ * objects is joined with "\n" as a separator. Remember to keep the
+ * number of "\n" in "lt" - 1. (and "\\n" is not equal to "\n").
+ * The value of "lt" is important, since it is used for assigning values
+ * in maps and common events.
+ *
+ * If you have problems with that, set JoinShowTextValues to false.
+ *
+ * IMPORTANT: You must only edit the string type values in the language files.
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
+ *
  * Version 1.1.5 - 2023/08/01
  * Project: https://github.com/Yoimer-Davila/MvLanguages
  * Author: Davila Yoimer
