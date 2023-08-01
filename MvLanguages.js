@@ -91,6 +91,7 @@
  * The .json files that are generated have a structure with small keys so that
  * their weight is smaller, since in large projects there can be a great impact
  * if the keys are of large size as parameters.
+ * The file are located in /data/languages
  *
  * In addition, objects with the key "lt", is an object created from other objects
  * with code 401 (show text), as shown below:
