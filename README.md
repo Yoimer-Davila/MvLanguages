@@ -41,7 +41,7 @@ Keep in mind to change the value to IfNotExist or Never before doing any editing
 
 ### JoinShowTextValues
 
-This parameter is a boolean value, if set to true, all command objects with code 401 (show text) will be traits as one and their first parameter will me joined with \n as separator. You can view an example here
+This parameter is a boolean value, if set to true, all command objects with code 401 (show text) will be traits as one and their first parameter will me joined with \n as separator. You can view an example [here](#joined-show-text)
 
 ### ImagesSwitchLanguage
 
