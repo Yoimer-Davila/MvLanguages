@@ -25,8 +25,16 @@
  * @default ["{\"language\": \"default\", \"label\":\"English\", \"languageLabel\":\"Language\"}"]
  *
  * @param GenerateLanguagesFiles
+ * @type combo
+ * @option IfNotExist
+ * @option Ever
+ * @option Never
+ * @desc Select an option for the generation of .json language files. It's only generated in PC version.
+ * @default IfNotExist
+ *
+ * @param JoinShowTextValues
  * @type boolean
- * @desc Set true forever generate the json language files to start app. When you deploy the game or do you want change the text on json, change to false.
+ * @desc Set true to join the show text (code 401) command objects.
  * @default true
  *
  * @param ImagesSwitchLanguage
@@ -35,7 +43,7 @@
  * @default false
  *
  * @help
- * ============================================================================
+ * =============================================================================
  *  __  __       _
  * |  \/  |     | |
  * | \  / |_   _| |     __ _ _ __   __ _ _   _  __ _  __ _  ___  ___
@@ -44,8 +52,10 @@
  * |_|  |_| \_/ |______\__,_|_| |_|\__, |\__,_|\__,_|\__, |\___||___/
  *                                  __/ |             __/ |
  *                                 |___/             |___/
- * ============================================================================
- * Version 1.0 - 2023/07/09
+ * =============================================================================
+
+ * Version 1.1.5 - 2023/08/01
+ * Project: https://github.com/Yoimer-Davila/MvLanguages
  * Author: Davila Yoimer
  */
 
@@ -57,108 +67,312 @@ if (!String.prototype.endsWith) {
     return lastIndex !== -1 && lastIndex === position;
   };
 }
-
 if (!String.prototype.startsWith) {
   String.prototype.startsWith = function(searchString, position) {
     position = position || 0;
     return this.indexOf(searchString, position) === position;
   };
 }
-
-if(!Array.prototype.forEach) {
-  Array.prototype.forEach = function (cbc) {
-    try {
-      for(var key of this)
-        cbc(key);
-    } catch (e) {
-      try {
-        for(var key in this)
-          cbc(key)
-      } catch (e) {}
-    }
-  }
+if (!String.prototype.isEmpty) {
+  String.prototype.isEmpty = function () { return this.length === 0; }
+}
+if(!String.prototype.strip) {
+  String.prototype.strip = function () { return this.replace(/^\s+|\s+$/g, '') }
 }
 
-if(!Array.prototype.map) {
-  Array.prototype.map = function (cbc) {
-    var arr = []
-    this.forEach(function (item) { arr.push(cbc(item)); })
-    return arr;
-  }
-}
 
 Array.prototype.firstOrNull = function () { return this.length > 0 ? this[0] : null; }
-Array.prototype.forEachIndexed = function (cbc) {
+Array.prototype.forEachIndexed = function (callback) {
   for (var index = 0; index < this.length; index++)
-    cbc(this[index], index);
+    callback(this[index], index);
 }
-Array.prototype.forEachAndNext = function (cbc) {
-  for (var index = 0; index < this.length - 1; index++)
-    cbc(this[index], this[index + 1])
+
+if(!Array.prototype.forEach) {
+  Array.prototype.forEach = function (callback) { this.forEachIndexed(function (it, _) { callback(it); }); }
 }
-Number.prototype.isTextCode = function () { return this == 401 || this == 102 || this == 405; }
+
+if(!Array.prototype.isEmpty) {
+  Array.prototype.isEmpty = function () { return this.length === 0; }
+}
+
+Array.prototype.mapIfIndexed = function (callback, condition) {
+  var arr = [];
+  this.forEachIndexed(function (it, index) {
+    if((condition && condition(it)) || (!condition && it))
+      arr.push(callback(it, index))
+  });
+  return arr;
+}
+
+Array.prototype.mapIf = function (callback, condition) { return this.mapIfIndexed(function (it, _) { return callback(it) }, condition) }
+
+Array.prototype.extendArray = function (arr) {
+  var thisObject = this;
+  arr.forEach(function (it) { thisObject.push(it) })
+}
+
+function TextCode() {}
+TextCode.SHOW_TEXT = 401;
+TextCode.SHOW_CHOICE =  102;
+TextCode.SHOW_SCROLLING_TEXT = 405;
+
+Number.prototype.isTextCode = function () {
+  return this.valueOf() === TextCode.SHOW_TEXT || this.valueOf() === TextCode.SHOW_CHOICE || this.valueOf() === TextCode.SHOW_SCROLLING_TEXT;
+}
 
 function MvLanguageMap(language, label, languageLabel) {
-  return {
-    "language": language,
-    "languageLabel": languageLabel,
-    "label": label,
-    "toString": function () { return this.language; }
-  };
+  this.language = language ? language : "";
+  this.label = label ? label : "";
+  this.languageLabel = languageLabel ? languageLabel : "";
+  this.toString = function () { return this.language; }
 }
 
+MvLanguageMap.fromJson = function (json) { return new MvLanguageMap(json["language"], json["label"], json["languageLabel"]); }
+
 function MvAndroidFileManager() {
-  return {
-    "existsSync": function () { return true; },
-    "mkdirSync": function (path){},
-    "readdirSync": function (path){return [];},
-    "writeFileSync": function (path) {},
-    "readFileSync": function () { return "{}"; }
-  };
+  this.existsSync = function () { return true; }
+  this.mkdirSync = function (path){}
+  this.readdirSync = function (path){return [];}
+  this.writeFileSync = function (path) {}
+  this.readFileSync = function () { return "{}"; }
 }
+
+function MvMini(name, index) {
+  this.n = name;
+  this.i = index;
+}
+
+function MvMiniActor(name, nickname, profile, index) {
+  MvMini.call(this, name, index)
+  this.nc = nickname;
+  this.p = profile;
+}
+function MvActor(name, nickname, profile) {
+  this.name = name;
+  this.nickname = nickname;
+  this.profile = profile;
+  this.toMini = function () { return new MvMiniActor(this.name, this.nickname, this.profile); }
+}
+MvActor.fromJson = function (json) { return new MvActor(json["name"], json["nickname"], json["profile"]); }
+MvActor.fromMiniJson = function (json) { return new MvActor(json["n"], json["nc"], json["p"]); }
+
+function MvMiniItem(name, description, index) {
+  MvMini.call(this, name, index);
+  this.d = description;
+}
+function MvItem(name, description) {
+  this.name = name;
+  this.description = description;
+  this.toMini = function () { return new MvMiniItem(this.name, this.description); }
+}
+MvItem.fromJson = function (json) { return new MvItem(json["name"], json["description"]); }
+MvItem.fromMiniJson = function (json) { return new MvItem(json["n"], json["d"]); }
+
+function MvMiniSkill(name, description, message1, message2) {
+  MvMiniItem.call(this, name, description);
+  this.ms1 = message1;
+  this.ms2 = message2;
+}
+function MvSkill(name, description, message1, message2) {
+  MvItem.call(this, name, description);
+  this.message1 = message1;
+  this.message2 = message2;
+  this.toMini = function () { return new MvMiniSkill(this.name, this.description, this.message1, this.message2); }
+}
+MvSkill.fromJson = function (json) { return new MvSkill(json["name"], json["description"], json["message1"], json["message2"]) }
+MvSkill.fromMiniJson = function (json) { return new MvSkill(json["n"], json["d"], json["ms1"], json["ms2"]) }
+
+function MvMiniState(name, description, message1, message2, message3, message4) {
+  MvMiniSkill.call(this, name, description, message1, message2);
+  this.ms3 = message3;
+  this.ms4 = message4;
+}
+function MvState(name, description, message1, message2, message3, message4) {
+  MvSkill.call(this, name, description, message1, message2);
+  this.message3 = message3;
+  this.message4 = message4;
+  this.toMini = function () { return new MvMiniState(this.name, this.description, this.message1, this.message2, this.message3, this.message4); }
+}
+MvState.fromJson = function (json) { return new MvState(json["name"], json["description"], json["message1"], json["message2"], json["message3"], json["message4"]) }
+MvState.fromMiniJson = function (json) { return new MvState(json["n"], json["d"], json["ms1"], json["ms2"], json["ms3"], json["ms4"]) }
+
+function MvMiniCommand(event, page, index, parameters) {
+  this.e = event;
+  this.i = index;
+  this.pg = page;
+  this.ps = parameters;
+  this.lt = undefined;
+  this.joinParameters = function () {
+    if(this.ps.length > 1) {
+      this.lt = this.ps.length;
+      this.ps = [this.ps.join("\n")];
+    }
+    return this;
+  }
+}
+function MvCommand(event, page, index, parameters) {
+  this.event = event;
+  this.index = index;
+  this.page = page;
+  this.parameters = parameters;
+  this.length = this.parameters.length;
+  this.toMini = function () { return new MvMiniCommand(this.event, this.page, this.index, this.parameters); }
+}
+MvCommand.fromMiniJson = function (json) {
+  var command = new MvCommand(json["e"], json["pg"], json["i"], json["ps"]);
+  command.length = json["lt"];
+  return command;
+}
+function MvMiniMap(displayName, messages) {
+  this.dn = displayName ? displayName : "";
+  this.mss = messages ? messages : [];
+}
+function MvMap(displayName, messages) {
+  this.displayName = displayName ? displayName : "";
+  this.messages = messages ? messages : [];
+}
+MvMap.fromMiniJson = function (json) { return new MvMap(json["dn"], json["mss"]); }
+function MvMiniTroop(name, pages) {
+  this.n = name;
+  this.pgs = pages;
+}
+function MvTroop(name, pages) {
+  this.name = name;
+  this.pages = pages ? pages : [];
+}
+MvTroop.fromMiniJson = function (json) { return new MvTroop(json["n"], json["pgs"]); }
+function MvMiniCommon(messages) {
+  this.mss = messages;
+}
+function MvCommon(messages) {
+  this.messages = messages ? messages : [];
+}
+MvCommon.fromMiniJson = function (json) { return new MvCommon(json["mss"]); }
+function MvEvent(id, pages) {
+  this.id = id;
+  this.pages = pages ? pages : [];
+}
+function defaultMvCommand() { return new MvCommand(-1, -1, -1, []) }
+
+function mapCommandEvent(event) {
+  var command = defaultMvCommand();
+  var messages = []
+  function pushCommand() {
+    if (command.parameters.isEmpty())
+      return;
+    messages.push(command.toMini().joinParameters());
+    command = defaultMvCommand();
+  }
+  event.pages.forEachIndexed(function (page, pIndex) {
+    if(!page)
+      return;
+    page.list.forEachIndexed(function (cmd, cIndex) {
+      if(!cmd)
+        return;
+      if(cmd.code.isTextCode()) {
+        if(cmd.code.valueOf() === TextCode.SHOW_TEXT && booleanParam("JoinShowTextValues")) {
+          if(command.parameters.isEmpty()) {
+            command.event = event.id;
+            command.page = pIndex;
+            command.index = cIndex;
+          }
+          command.parameters.push(cmd.parameters[0]);
+        } else {
+          if(booleanParam("JoinShowTextValues"))
+            pushCommand();
+          messages.push(new MvMiniCommand(event.id, pIndex, cIndex, cmd.parameters));
+        }
+      } else pushCommand();
+    });
+  });
+  return messages;
+}
+
+function assignCommand(page, events){
+  if(!page)
+    return
+  page.forEach(function (value) {
+    var reducer = 0;
+    value = MvCommand.fromMiniJson(value);
+
+    if(value.length) {
+      value.parameters[0].split("\n").forEachIndexed(function (it, index) {
+        if(it.strip().isEmpty()) {
+          reducer += 1
+          return
+        }
+
+        index -= reducer
+        if(index < value.length)
+          events[value.event].pages[value.page].list[value.index + index].parameters[0] = it
+      })
+    }
+    else events[value.event].pages[value.page].list[value.index].parameters = value.parameters
+  })
+}
+
+function MvLanguage() {
+  this.title = $dataSystem.gameTitle;
+  this.terms = $dataSystem.terms;
+  this.equipTypes = $dataSystem.equipTypes;
+  this.skillTypes = $dataSystem.skillTypes;
+  this.weaponTypes = $dataSystem.weaponTypes;
+  this.classes = $dataClasses.mapIf(function (it) { return it.name; })
+  this.actors = $dataActors.mapIf(function (it) { return MvActor.fromJson(it).toMini(); });
+  this.enemies = $dataEnemies.mapIf(function (it) { return it.battlerName; })
+  this.troops = $dataTroops.mapIf(function (it) { return new MvMiniTroop(it.name, [mapCommandEvent(it)]); })
+  this.weapons = $dataWeapons.mapIf(function (it) { return MvItem.fromJson(it).toMini(); });
+  this.armors = $dataArmors.mapIf(function (it) { return MvItem.fromJson(it).toMini(); });
+  this.items = $dataItems.mapIf(function (it) { return MvItem.fromJson(it).toMini(); });
+  this.skills = $dataSkills.mapIf(function (it) { return MvSkill.fromJson(it).toMini(); });
+  this.states = $dataStates.mapIf(function (it) { return MvState.fromJson(it).toMini(); });
+  this.commonEvents = new MvMiniCommon(mapCommandEvent(new MvEvent(0, $dataCommonEvents)));
+  this.maps = {};
+}
+
 
 function joinPaths(first, second) { return first + "/" + second; }
 function jsonPathName(name) { return name + ".json" }
 
-function imageExists(url, cbc) {
+function imageExists(url, callback) {
   var image = new Image();
-  image.onload = function () { cbc(true); }
-  image.onerror = function () { cbc(false); }
+  image.onload = function () { callback(true); }
+  image.onerror = function () { callback(false); }
   image.src = url;
 }
 
 
-function loadLanguage(language, asc) {
+function loadLanguage(language, asc, callback) {
   var xhr = new XMLHttpRequest();
   var url = joinPaths(_mvLanguagesFolder, jsonPathName(language));
   xhr.open('GET', url, asc);
   xhr.overrideMimeType('application/json');
   xhr.onload = function() {
     if (xhr.status < 400)
-      $MvLanguages[language] = JSON.parse(xhr.responseText);
+      callback(xhr.responseText);
   };
   xhr.onerror = function() { };
   xhr.send();
 }
 
 
-function mapLanguage(json) { return MvLanguageMap(json["language"], json["label"], json["languageLabel"]); }
-function mapLanguages(params) { return JSON.parse(params["Languages"]).map(function (item) { return mapLanguage(JSON.parse(item)) }); }
+function mapLanguage(json) { return MvLanguageMap.fromJson(json); }
+function mapLanguages(params) { return JSON.parse(params["Languages"]).mapIf(function (item) { return mapLanguage(JSON.parse(item)) }); }
 
 var _mvParams = PluginManager.parameters('MvLanguages') || {};
-var _defaultLanguage = MvLanguageMap("default", "English", "Language")
+var _defaultLanguage = new MvLanguageMap("default", "English", "Language")
 var _mvLanguages = _mvParams["Languages"] ? mapLanguages(_mvParams) : [_defaultLanguage];
 var _isMobile = !Utils.isNwjs()
-var _langKey = MvLanguageMap("MvLanguage", "Language", "")
+var _langKey = new MvLanguageMap("MvLanguage", "Language", "")
 var _mvLanguageIndex = 0;
 var _mvLanguagesFolder = "data/languages"
 var _mvDefaultFile = joinPaths(_mvLanguagesFolder, jsonPathName(_defaultLanguage));
 var _mvLanguage = _defaultLanguage;
-var _mvJsonLanguage = {};
+var _mvJsonLanguage = null;
 var _loggerFile = joinPaths(_mvLanguagesFolder, "logger.txt");
 var $MvLanguages = {};
 
-function fileManager(){ return _isMobile ? MvAndroidFileManager() : require("fs"); }
+function fileManager(){ return _isMobile ? new MvAndroidFileManager() : require("fs"); }
 function plusChangeLanguage() {
   if (_mvLanguageIndex === _mvLanguages.length - 1) _mvLanguageIndex = 0;
   else _mvLanguageIndex++;
@@ -167,149 +381,53 @@ function plusChangeLanguage() {
 
 
 function getLanguage(lang) { return $MvLanguages[lang] ? $MvLanguages[lang] : null; }
-function loadLanguages(asc) { _mvLanguages.forEach(function (item) { loadLanguage(item.language, asc); }); }
+function assignLanguage(language, fileResult) { $MvLanguages[language] = JSON.parse(fileResult); }
+function loadLanguages(asc) {
+  _mvLanguages.forEach(function (item) {
+    if(item.language !== _mvLanguage.language)
+      loadLanguage(item.language, asc, function (result) { assignLanguage(item.language, result) });
+  });
+}
 function booleanParam(key) { return _mvParams[key] === "true"; }
+function generateOption() { return _mvParams["GenerateLanguagesFiles"]; }
+function everGenerate() { return generateOption() === "Ever" }
+function generateIfNotExist() { return generateOption() === "IfNotExist" }
+function neverGenerate() { return generateOption() === "Never"; }
 function generateFiles() {
   var fs = fileManager();
 
   function generateInitialFile() {
     if (!fs.existsSync(_mvLanguagesFolder)) fs.mkdirSync(_mvLanguagesFolder);
-    _mvJsonLanguage = {
-      title: $dataSystem.gameTitle,
-      terms: $dataSystem.terms,
-      equip_types: $dataSystem.equipTypes,
-      skill_types: $dataSystem.skillTypes,
-      weapon_types: $dataSystem.weaponTypes,
-      actors: [],
-      armors: [],
-      classes: [],
-      common_events: [],
-      enemies: [],
-      items: [],
-      skills: [],
-      states: [],
-      troops: [],
-      weapons: [],
-      map_data: {}
-    };
-
-    $dataActors.forEachAndNext(function (_, next) {
-      _mvJsonLanguage.actors.push({
-        name: next.name,
-        nickname: next.nickname,
-        profile: next.profile
-      });
-    });
-    $dataArmors.forEachAndNext(function (_, next) {
-      _mvJsonLanguage.armors.push({
-        name: next.name,
-        description: next.description
-      });
-    });
-    $dataClasses.forEachAndNext(function (_, next) { _mvJsonLanguage.classes.push(next.name); });
-    $dataEnemies.forEachAndNext(function (_, next) { _mvJsonLanguage.enemies.push(next.battlerName); });
-    $dataItems.forEachAndNext(function (_, next) {
-      _mvJsonLanguage.items.push({
-        name: next.name,
-        description: next.description
-      });
-    });
-    $dataSkills.forEachAndNext(function (_, next) {
-      _mvJsonLanguage.skills.push({
-        name: next.name,
-        description: next.description,
-        message1: next.message1,
-        message2: next.message2
-      });
-    });
-    $dataStates.forEachAndNext(function (_, next) {
-      _mvJsonLanguage.states.push({
-        name: next.name,
-        description: next.description,
-        message1: next.message1,
-        message2: next.message2,
-        message3: next.message3,
-        message4: next.message4
-      });
-    });
-    $dataTroops.forEachAndNext(function (_, next) {
-      if(!next)
-        return;
-      var troop = {name: next.name, pages: []};
-      next.pages.forEach(function (page) {
-        if(!page)
-          return;
-        var pages = []
-        page.list.forEachIndexed(function (cmd, cIndex) {
-          if(!cmd)
-            return;
-          if(cmd.code.isTextCode())
-            pages.push({index: cIndex, parameters: cmd.parameters});
-        })
-        troop.pages.push(pages);
-      });
-      _mvJsonLanguage.troops.push(troop);
-    });
-    $dataCommonEvents.forEachAndNext(function (_, next) {
-      if(!next)
-        return;
-      var ce = {messages: []};
-      next.list.forEachIndexed(function (cmd, cIndex) {
-        if(!cmd)
-          return;
-        if(cmd.code.isTextCode())
-          ce.messages.push({index: cIndex, parameters: cmd.parameters});
-      });
-      _mvJsonLanguage.common_events.push(ce);
-    });
-    $dataWeapons.forEachAndNext(function (_, next) {
-      _mvJsonLanguage.weapons.push({
-        name: next.name,
-        description: next.description
-      });
-    });
-
-    var files = fs.readdirSync("data");
-    files.forEach(function (file) {
-      if (!file.startsWith("Map") || isNaN(file.substr(3, 3)) || file.startsWith("MapInfos")) return;
+    _mvJsonLanguage = new MvLanguage();
+    fs.readdirSync("data").forEach(function (file) {
+      if (!file.startsWith("Map") || file.startsWith("MapInfos") || !file.endsWith(".json")) return;
+      var mapNum = file.substr(3, 3);
+      if(isNaN(mapNum)) return;
       var json = JSON.parse(fs.readFileSync("data/" + file));
       var messages = [];
-
-      json.events.forEachAndNext(function (_, event) {
+      json.events.forEach(function (event) {
         if(!event)
           return;
-        event.pages.forEachIndexed(function (page, pIndex) {
-          if(!page)
-            return;
-          page.list.forEachIndexed(function (cmd, cIndex) {
-            if(!cmd)
-              return;
-
-            if(cmd.code.isTextCode())
-              messages.push({event: event.id, page: pIndex, index: cIndex, parameters: cmd.parameters, code: cmd.code, indent: cmd.indent});
-          });
-        })
-      });
-
-      _mvJsonLanguage.map_data["MAP" + file.substr(3, 3)] = messages;
+        messages.extendArray(mapCommandEvent(event))
+      })
+      _mvJsonLanguage.maps["map" + mapNum] = new MvMiniMap(json.displayName, messages);
     });
     fs.writeFileSync(_mvDefaultFile, JSON.stringify(_mvJsonLanguage))
   }
-
-  generateInitialFile();
+  if((generateIfNotExist() && !fs.existsSync(_mvDefaultFile)) || everGenerate())
+    generateInitialFile();
 
   var json = getLanguage(_defaultLanguage.language) || _mvJsonLanguage;
   if(json) {
     _mvLanguages.forEach(function (lang) {
       var path = joinPaths(_mvLanguagesFolder, jsonPathName(lang))
-      fs.writeFileSync(path, JSON.stringify(json));
+      if((generateIfNotExist() && !fs.existsSync(path)) || everGenerate())
+        fs.writeFileSync(path, JSON.stringify(json));
     });
-
   }
 }
 
-function MvUpdateLanguageData() {
-
+function currentLanguageMap() {
   if (!ConfigManager[_langKey.language])
     ConfigManager[_langKey.language] = _mvLanguageIndex;
 
@@ -319,9 +437,12 @@ function MvUpdateLanguageData() {
   if(!_mvLanguage)
     _mvLanguage = _mvLanguages.firstOrNull()
 
+}
+
+function MvUpdateLanguageData() {
+  currentLanguageMap()
   if(!_mvLanguage)
     return;
-
   _mvJsonLanguage = getLanguage(_mvLanguage.language)
 
   if(!_mvJsonLanguage)
@@ -331,59 +452,21 @@ function MvUpdateLanguageData() {
 
   $dataSystem.gameTitle = _mvJsonLanguage.title;
   $dataSystem.terms = _mvJsonLanguage.terms;
-  $dataSystem.weaponTypes = _mvJsonLanguage.weapon_types;
-  $dataSystem.equipTypes = _mvJsonLanguage.equip_types;
-  $dataSystem.skillTypes = _mvJsonLanguage.skill_types;
+  $dataSystem.weaponTypes = _mvJsonLanguage.weaponTypes;
+  $dataSystem.equipTypes = _mvJsonLanguage.equipTypes;
+  $dataSystem.skillTypes = _mvJsonLanguage.skillTypes;
 
-  _mvJsonLanguage.actors.forEachIndexed(function (item, index) {
-    $dataActors[index + 1].name = item.name;
-    $dataActors[index + 1].nickname = item.nickname;
-    $dataActors[index + 1].profile = item.profile;
-  });
-  _mvJsonLanguage.armors.forEachIndexed(function (item, index) {
-    $dataArmors[index + 1].name = item.name;
-    $dataArmors[index + 1].description = item.description;
-  })
-  _mvJsonLanguage.classes.forEachIndexed(function (item, index) {
-    $dataClasses[index + 1].name = item;
-  });
-  _mvJsonLanguage.common_events.forEachIndexed(function (item, index) {
-    item.messages.forEach(function (message) {
-      $dataCommonEvents[index + 1].list[message.index].parameters = message.parameters;
-    });
-  });
-  _mvJsonLanguage.enemies.forEachIndexed(function (item, index) {
-    $dataEnemies[index + 1].name = item;
-  });
-  _mvJsonLanguage.items.forEachIndexed(function (item, index) {
-    $dataItems[index + 1].name = item.name;
-    $dataItems[index + 1].description = item.description;
-  });
-  _mvJsonLanguage.skills.forEachIndexed(function (item, index) {
-    $dataSkills[index + 1].name = item.name;
-    $dataSkills[index + 1].description = item.description;
-    $dataSkills[index + 1].message1 = item.message1;
-    $dataSkills[index + 1].message2 = item.message2;
-  });
-  _mvJsonLanguage.states.forEachIndexed(function (item, index) {
-    $dataStates[index + 1].name = item.name;
-    $dataStates[index + 1].description = item.description;
-    $dataStates[index + 1].message1 = item.message1;
-    $dataStates[index + 1].message2 = item.message2;
-    $dataStates[index + 1].message3 = item.message3;
-    $dataStates[index + 1].message4 = item.message4;
-    $dataStates[index + 1].message5 = item.message5;
-  });
-  _mvJsonLanguage.troops.forEachIndexed(function (item, index) {
-    item.pages.forEachIndexed(function (page, tIndex) {
-      page.forEach(function (value) {
-        $dataTroops[index + 1].pages[tIndex].list[value.index].parameters = value.parameters;
-      });
-    });
-  });
-  _mvJsonLanguage.weapons.forEachIndexed(function (item, index) {
-    $dataWeapons[index + 1].name = item.name;
-    $dataWeapons[index + 1].description = item.description;
+  _mvJsonLanguage.actors.forEachIndexed(function (item, index) { Object.assign($dataActors[index + 1], MvActor.fromMiniJson(item)); });
+  _mvJsonLanguage.armors.forEachIndexed(function (item, index) { Object.assign($dataArmors[index + 1], MvItem.fromMiniJson(item)); });
+  _mvJsonLanguage.classes.forEachIndexed(function (item, index) { $dataClasses[index + 1].name = item; });
+  _mvJsonLanguage.enemies.forEachIndexed(function (item, index) { $dataEnemies[index + 1].battlerName = item; });
+  _mvJsonLanguage.items.forEachIndexed(function (item, index) {  Object.assign($dataItems[index + 1], MvItem.fromMiniJson(item)); });
+  _mvJsonLanguage.skills.forEachIndexed(function (item, index) { Object.assign($dataSkills[index + 1], MvSkill.fromMiniJson(item)); });
+  _mvJsonLanguage.states.forEachIndexed(function (item, index) { Object.assign($dataStates[index + 1], MvState.fromMiniJson(item)); });
+  _mvJsonLanguage.weapons.forEachIndexed(function (item, index) { Object.assign($dataWeapons[index + 1], MvItem.fromMiniJson(item));  });
+  assignCommand(MvCommon.fromMiniJson(_mvJsonLanguage.commonEvents).messages, [{pages: $dataCommonEvents}]);
+  _mvJsonLanguage.troops.forEach(function (item) {
+    MvTroop.fromMiniJson(item).pages.forEach(function (page) { assignCommand(page, $dataTroops) });
   });
 
 
@@ -393,10 +476,14 @@ function mvMain() {
   var _start = Scene_Boot.prototype.start;
   Scene_Boot.prototype.start = function() {
     if(!DataManager.isBattleTest() && !DataManager.isEventTest()) {
-      if(!_isMobile && booleanParam("GenerateLanguagesFiles"))
+      if(!_isMobile && !neverGenerate())
         generateFiles();
-      loadLanguages(false);
-      MvUpdateLanguageData();
+      currentLanguageMap()
+      loadLanguage(_mvLanguage.language, true, function (result) {
+        assignLanguage(_mvLanguage.language, result);
+        MvUpdateLanguageData();
+      })
+      loadLanguages(true);
     }
     _start.call(this)
   };
@@ -466,7 +553,7 @@ function mvMain() {
   };
   var _apply_data = ConfigManager.applyData;
   ConfigManager.applyData = function(config) {
-    this.MvLanguage = this.readLanguage(config, _langKey.language);
+    this.MvLanguageMap = this.readLanguage(config, _langKey.language);
     _apply_data.call(this, config);
   };
 
@@ -476,12 +563,11 @@ function mvMain() {
 
   Scene_Map.prototype.onMapLoaded = function() {
     _onMapLoaded.call(this);
-    var data = _mvJsonLanguage.map_data["MAP" + $gameMap.mapId().padZero(3)]
-    if (data) {
-      data.forEach(function (item) {
-        $dataMap.events[item.event].pages[item.page].list[item.index].parameters = item.parameters;
-      })
-
+    var map = _mvJsonLanguage.maps["map" + $gameMap.mapId().padZero(3)]
+    if(map) {
+      map = MvMap.fromMiniJson(map);
+      $dataMap.displayName = map.displayName;
+      assignCommand(map.messages, $dataMap.events);
     }
   };
 
