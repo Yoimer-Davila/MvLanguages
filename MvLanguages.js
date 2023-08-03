@@ -450,9 +450,10 @@ var _mvParams = PluginManager.parameters('MvLanguages') || {};
 var _defaultLanguage = new MvLanguageMap("default", "English", "Language")
 var _mvLanguages = _mvParams["Languages"] ? mapLanguages(_mvParams) : [_defaultLanguage];
 var _isMobile = !Utils.isNwjs()
+var _isTest = Utils.isOptionValid('test')
 var _langKey = new MvLanguageMap("MvLanguage", "Language", "")
 var _mvLanguageIndex = 0;
-var _mvLanguagesFolder = "data/languages"
+var _mvLanguagesFolder = "data/languages";
 var _mvDefaultFile = joinPaths(_mvLanguagesFolder, jsonPathName(_defaultLanguage));
 var _mvLanguage = _defaultLanguage;
 var _mvJsonLanguage = null;
@@ -563,7 +564,7 @@ function mvMain() {
   var _start = Scene_Boot.prototype.start;
   Scene_Boot.prototype.start = function() {
     if(!DataManager.isBattleTest() && !DataManager.isEventTest()) {
-      if(!_isMobile && !neverGenerate())
+      if(!_isMobile && _isTest && !neverGenerate())
         generateFiles();
       currentLanguageMap()
       loadLanguage(_mvLanguage.language, true, function (result) {
@@ -582,7 +583,8 @@ function mvMain() {
   var _add_general_options = Window_Options.prototype.addGeneralOptions;
   Window_Options.prototype.addGeneralOptions = function() {
     _add_general_options.call(this);
-    this.addCommand(_langKey.languageLabel, _langKey.language);
+    if(_langKey && _langKey.languageLabel)
+      this.addCommand(_langKey.languageLabel, _langKey.language);
   };
 
   var _processOk = Window_Options.prototype.processOk;
