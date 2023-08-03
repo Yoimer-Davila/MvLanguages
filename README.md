@@ -25,10 +25,10 @@ Then configure the necessary parameters to generate and use the files for the la
 There are some necessary parameters that need to be configured.
 
 ### Languages 
-This parameter is a list of structures. Each element will have two mandatory values and one optional value.
+This parameter is a list of structures. Each element will have two required values and one optional value.
 * **language**: A text to be used as the language identifier and also as the name of the .json file to be generated. Its required.
 * **label**: A text to be used as the value to display in the options menu when the selected language is changed, I recommend to put the name of the language (English, Español, etc). Its required.
-* **labelLanguage**: A text to be used as the value to display in the options menu as the value for the language option. I recommend using the language translation to the language to be added (Language, Language, etc). Default value is Language.
+* **labelLanguage**: A text to be used as the value to display in the options menu as the value for the language option. I recommend using the language translation to the language to be added (Language, Idioma, etc). Default value is Language.
 
 ### GenerateLanguagesFiles
 
