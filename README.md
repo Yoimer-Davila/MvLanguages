@@ -92,7 +92,7 @@ If JoinShowTextValues is true, this is produced:
 ```
 
 If JoinShowTextValues is false, this is produced:
-```json
+```json5
 /*....*/
 {
   "e": 0,
